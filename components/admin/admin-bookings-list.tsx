@@ -61,6 +61,17 @@ export function AdminBookingsList({ bookings, businessId }: AdminBookingsListPro
   }, [activeBookings])
 
   const bookedDateKeys = useMemo(() => new Set(Object.keys(bookingsByDate)), [bookingsByDate])
+  const meetingTypeLegend = useMemo(() => {
+    const unique = new Map<number, { id: number; name: string; color: string }>()
+    for (const item of activeBookings) {
+      unique.set(item.meetingType.id, {
+        id: item.meetingType.id,
+        name: item.meetingType.name,
+        color: item.meetingType.color,
+      })
+    }
+    return Array.from(unique.values()).sort((a, b) => a.name.localeCompare(b.name))
+  }, [activeBookings])
   const selectedDateKey = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null
   const selectedDateBookings = selectedDateKey ? (bookingsByDate[selectedDateKey] ?? []) : []
   const selectedBooking = selectedDateBookings.find((item) => item.booking.id === selectedBookingId)
@@ -217,6 +228,25 @@ export function AdminBookingsList({ bookings, businessId }: AdminBookingsListPro
               <CalendarDays className="h-4 w-4 text-primary" />
               {t.admin.bookingCalendarTitle}
             </h3>
+            {meetingTypeLegend.length > 0 && (
+              <div className="mb-3">
+                <p className="text-xs text-muted-foreground mb-2">{t.admin.meetingTypes}</p>
+                <div className="flex flex-wrap gap-2">
+                  {meetingTypeLegend.map((type) => (
+                    <span
+                      key={type.id}
+                      className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs text-foreground"
+                    >
+                      <span
+                        className="inline-block size-2 rounded-full"
+                        style={{ backgroundColor: type.color }}
+                      />
+                      <span className="max-w-[150px] truncate">{type.name}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
             <CalendarPicker
               mode="single"
               selected={selectedDate}
