@@ -59,7 +59,7 @@ export function generateICS(options: CalendarEventOptions): string {
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//MeetingScheduler//CodeNation-studio//EN',
+    'PRODID:-//Chrono//CodeNation-studio//EN',
     'CALSCALE:GREGORIAN',
     status === 'CANCELLED' ? 'METHOD:CANCEL' : 'METHOD:REQUEST',
     'BEGIN:VEVENT',

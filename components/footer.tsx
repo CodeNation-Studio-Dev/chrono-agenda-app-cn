@@ -18,7 +18,7 @@ export function Footer() {
               <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary">
                 <Calendar className="h-5 w-5 text-primary-foreground" />
               </div>
-              <span className="text-lg font-semibold text-foreground">MeetingScheduler</span>
+              <span className="text-lg font-semibold text-foreground">Chrono</span>
             </div>
             <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted-foreground">{t.footer.tagline}</p>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">{t.footer.companyDesc}</p>

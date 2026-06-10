@@ -3,9 +3,9 @@ import { Resend } from 'resend'
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 // Sender address. Set EMAIL_FROM to your verified domain address, e.g.
-// "MeetingScheduler <notifications@yourdomain.com>". Falls back to Resend's
+// "Chrono <notifications@yourdomain.com>". Falls back to Resend's
 // shared test sender, which can only deliver to your own verified email.
-const FROM_ADDRESS = process.env.EMAIL_FROM || 'MeetingScheduler <onboarding@resend.dev>'
+const FROM_ADDRESS = process.env.EMAIL_FROM || 'Chrono <onboarding@resend.dev>'
 
 interface EmailAttachment {
   filename: string
@@ -47,7 +47,7 @@ export function getBookingConfirmationEmail(
   time: string,
   businessName?: string,
 ) {
-  const fromLabel = businessName ?? 'MeetingScheduler'
+  const fromLabel = businessName ?? 'Chrono'
   return {
     subject: `Booking Confirmed: ${meetingType} — ${fromLabel}`,
     html: `
@@ -74,7 +74,7 @@ export function getBookingCancellationEmail(
   time: string,
   businessName?: string,
 ) {
-  const fromLabel = businessName ?? 'MeetingScheduler'
+  const fromLabel = businessName ?? 'Chrono'
   return {
     subject: `Booking Cancelled: ${meetingType} — ${fromLabel}`,
     html: `
@@ -103,7 +103,7 @@ export function getRescheduleEmail(
   newTime: string,
   businessName?: string,
 ) {
-  const fromLabel = businessName ?? 'MeetingScheduler'
+  const fromLabel = businessName ?? 'Chrono'
   return {
     subject: `Meeting Rescheduled: ${meetingType} — ${fromLabel}`,
     html: `
@@ -137,7 +137,7 @@ export function getAdminNotificationEmail(
   action: 'booked' | 'cancelled' | 'rescheduled',
   businessName?: string,
 ) {
-  const fromLabel = businessName ?? 'MeetingScheduler'
+  const fromLabel = businessName ?? 'Chrono'
   const actionText = action === 'booked' ? 'New Booking' : action === 'cancelled' ? 'Booking Cancelled' : 'Booking Rescheduled'
   const bgColor = action === 'booked' ? '#dcfce7' : action === 'cancelled' ? '#fee2e2' : '#fef9c3'
   

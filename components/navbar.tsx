@@ -33,7 +33,7 @@ export function Navbar({ user, businessSlug }: NavbarProps) {
           <div className="p-2 bg-primary/10 rounded-lg">
             <CalendarDays className="h-5 w-5 text-primary" />
           </div>
-          <span className="font-semibold text-foreground">MeetingScheduler</span>
+          <span className="font-semibold text-foreground">Chrono</span>
         </Link>
 
         <nav className="flex items-center gap-2">

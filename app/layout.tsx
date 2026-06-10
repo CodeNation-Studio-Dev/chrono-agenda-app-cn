@@ -9,7 +9,7 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'MeetingScheduler - Book Your Meetings',
+  title: 'Chrono - Book Your Meetings',
   description: 'Schedule, reschedule, or cancel meetings with ease',
   generator: 'v0.app',
   icons: {

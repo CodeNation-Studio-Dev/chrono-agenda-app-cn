@@ -298,7 +298,7 @@ export async function createBooking(data: {
   if (clientRecord[0]?.email && meetingType[0]) {
     const dateFormatted = format(new Date(slot[0].date), 'EEEE, MMMM d, yyyy')
     const timeFormatted = `${slot[0].startTime} - ${slot[0].endTime}`
-    const businessName = biz[0]?.name ?? 'MeetingScheduler'
+    const businessName = biz[0]?.name ?? 'Chrono'
     const emailContent = getBookingConfirmationEmail(
       clientRecord[0].name,
       meetingType[0].name,
@@ -374,7 +374,7 @@ export async function cancelBooking(id: number) {
   if (clientRecord[0]?.email) {
     const dateFormatted = format(new Date(slot.date), 'EEEE, MMMM d, yyyy')
     const timeFormatted = `${slot.startTime} - ${slot.endTime}`
-    const businessName = biz[0]?.name ?? 'MeetingScheduler'
+    const businessName = biz[0]?.name ?? 'Chrono'
     const emailContent = getBookingCancellationEmail(
       clientRecord[0].name,
       meetingType.name,
@@ -471,7 +471,7 @@ export async function rescheduleBooking(id: number, newSlotId: number) {
     const oldTimeFormatted = `${oldSlot.startTime} - ${oldSlot.endTime}`
     const newDateFormatted = format(new Date(newSlot[0].date), 'EEEE, MMMM d, yyyy')
     const newTimeFormatted = `${newSlot[0].startTime} - ${newSlot[0].endTime}`
-    const businessName = biz[0]?.name ?? 'MeetingScheduler'
+    const businessName = biz[0]?.name ?? 'Chrono'
 
     const emailContent = getRescheduleEmail(
       clientRecord[0].name,
@@ -645,7 +645,7 @@ export async function adminCreateBooking(data: {
   if (clientRecord[0].email && meetingType[0]) {
     const dateFormatted = format(new Date(slot[0].date), 'EEEE, MMMM d, yyyy')
     const timeFormatted = `${slot[0].startTime} - ${slot[0].endTime}`
-    const businessName = biz[0]?.name ?? 'MeetingScheduler'
+    const businessName = biz[0]?.name ?? 'Chrono'
     const emailContent = getBookingConfirmationEmail(
       clientRecord[0].name,
       meetingType[0].name,
