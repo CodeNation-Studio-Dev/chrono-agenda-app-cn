@@ -60,7 +60,7 @@ export function UsersManager({ users, currentUserId, slots, meetingTypes, busine
   const handleRoleToggle = async (u: User) => {
     setPendingId(u.id)
     try {
-      await setUserRole(u.id, u.role === 'admin' ? 'client' : 'admin')
+      await setUserRole(u.id, u.role === 'admin' ? 'client' : 'admin', businessId)
       router.refresh()
     } catch (error) {
       console.error('[v0] Failed to change role:', error)
@@ -73,7 +73,7 @@ export function UsersManager({ users, currentUserId, slots, meetingTypes, busine
     if (!deleteTarget) return
     setIsDeleting(true)
     try {
-      await deleteUser(deleteTarget.id)
+      await deleteUser(deleteTarget.id, businessId)
       setDeleteTarget(null)
       router.refresh()
     } catch (error) {
@@ -87,7 +87,7 @@ export function UsersManager({ users, currentUserId, slots, meetingTypes, busine
     if (!newName.trim()) return
     setIsSaving(true)
     try {
-      await createClientUser({
+      await createClientUser(businessId, {
         name: newName,
         phone: newPhone || undefined,
         email: newEmail || undefined,

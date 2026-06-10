@@ -32,7 +32,7 @@ interface AdminDashboardProps {
   slotsMap: Record<number, AvailabilitySlot[]>
   meetingTypesMap: Record<number, MeetingType[]>
   bookingsMap: Record<number, BookingWithDetails[]>
-  users: User[]
+  usersMap: Record<number, User[]>
   currentUserId: string
 }
 
@@ -41,7 +41,7 @@ export function AdminDashboard({
   slotsMap,
   meetingTypesMap,
   bookingsMap,
-  users,
+  usersMap,
   currentUserId,
 }: AdminDashboardProps) {
   const { t } = useLanguage()
@@ -54,6 +54,7 @@ export function AdminDashboard({
   const slots = selectedBusinessId ? (slotsMap[selectedBusinessId] ?? []) : []
   const meetingTypes = selectedBusinessId ? (meetingTypesMap[selectedBusinessId] ?? []) : []
   const bookings = selectedBusinessId ? (bookingsMap[selectedBusinessId] ?? []) : []
+  const users = selectedBusinessId ? (usersMap[selectedBusinessId] ?? []) : []
 
   const activeBookings = bookings.filter(
     (b) => b.booking.status === 'confirmed' || b.booking.status === 'rescheduled',

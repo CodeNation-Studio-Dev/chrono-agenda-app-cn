@@ -2,7 +2,7 @@
 
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { user, businesses, meetingTypes, availabilitySlots, bookings } from '@/lib/db/schema'
+import { user, businesses, businessMembers, meetingTypes, availabilitySlots, bookings } from '@/lib/db/schema'
 import { and, eq, gte, desc, asc } from 'drizzle-orm'
 import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
@@ -542,16 +542,32 @@ export async function completeBooking(id: number, businessId: number) {
 }
 
 // ---------------------------------------------------------------------------
-// User management (global admin actions)
+// User management (business-scoped admin actions)
 // ---------------------------------------------------------------------------
 
-export async function getAllUsers() {
-  await requireAdmin()
-  return db.select().from(user).orderBy(asc(user.name))
+export async function getBusinessUsers(businessId: number) {
+  const adminId = await requireAdmin()
+  await requireBusinessOwner(adminId, businessId)
+
+  const members = await db
+    .select({ memberUser: user })
+    .from(businessMembers)
+    .innerJoin(user, eq(businessMembers.userId, user.id))
+    .where(eq(businessMembers.businessId, businessId))
+    .orderBy(asc(user.name))
+
+  const owner = await db.select().from(user).where(eq(user.id, adminId)).limit(1)
+
+  const users = owner.length > 0 ? [owner[0], ...members.map((row) => row.memberUser)] : members.map((row) => row.memberUser)
+  return users.filter((u, index, arr) => arr.findIndex((candidate) => candidate.id === u.id) === index)
 }
 
-export async function createClientUser(data: { name: string; phone?: string; email?: string }) {
-  await requireAdmin()
+export async function createClientUser(
+  businessId: number,
+  data: { name: string; phone?: string; email?: string },
+) {
+  const adminId = await requireAdmin()
+  await requireBusinessOwner(adminId, businessId)
 
   const name = data.name.trim()
   if (!name) throw new Error('Name is required')
@@ -574,6 +590,11 @@ export async function createClientUser(data: { name: string; phone?: string; ema
       emailVerified: false,
     })
     .returning()
+
+  await db
+    .insert(businessMembers)
+    .values({ businessId, userId: result[0].id })
+    .onConflictDoNothing()
 
   revalidatePath('/admin')
   return result[0]
@@ -680,22 +701,35 @@ export async function adminCreateBooking(data: {
   return result[0]
 }
 
-export async function setUserRole(userId: string, role: 'admin' | 'client') {
+export async function setUserRole(userId: string, role: 'admin' | 'client', businessId: number) {
   const adminId = await requireAdmin()
+  await requireBusinessOwner(adminId, businessId)
   if (userId === adminId && role !== 'admin') {
     throw new Error('You cannot change your own admin role')
   }
-  const target = await db.select().from(user).where(eq(user.id, userId)).limit(1)
+  const target = await db
+    .select({ memberUser: user })
+    .from(businessMembers)
+    .innerJoin(user, eq(businessMembers.userId, user.id))
+    .where(and(eq(businessMembers.businessId, businessId), eq(user.id, userId)))
+    .limit(1)
   if (target.length === 0) throw new Error('User not found')
   await db.update(user).set({ role, updatedAt: new Date() }).where(eq(user.id, userId))
   revalidatePath('/admin')
 }
 
-export async function deleteUser(userId: string) {
+export async function deleteUser(userId: string, businessId: number) {
   const adminId = await requireAdmin()
+  await requireBusinessOwner(adminId, businessId)
   if (userId === adminId) throw new Error('You cannot delete your own account')
-  const target = await db.select().from(user).where(eq(user.id, userId)).limit(1)
+
+  const target = await db
+    .select({ memberId: businessMembers.id })
+    .from(businessMembers)
+    .where(and(eq(businessMembers.businessId, businessId), eq(businessMembers.userId, userId)))
+    .limit(1)
   if (target.length === 0) throw new Error('User not found')
+
   await db.delete(user).where(eq(user.id, userId))
   revalidatePath('/admin')
 }
