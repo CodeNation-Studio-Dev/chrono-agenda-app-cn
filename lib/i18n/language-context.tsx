@@ -13,17 +13,23 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>('es')
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     const saved = localStorage.getItem('language') as Language | null
     if (saved && (saved === 'es' || saved === 'en')) {
       setLanguageState(saved)
     }
+    setMounted(true)
   }, [])
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang)
     localStorage.setItem('language', lang)
+    // Update the html lang attribute when language changes
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = lang
+    }
   }
 
   const t = translations[language]

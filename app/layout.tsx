@@ -37,7 +37,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="bg-background" suppressHydrationWarning>
+    <html lang="es" className="bg-background" suppressHydrationWarning>
       <body className="font-sans antialiased">
         <LanguageProvider>
           <div className="flex min-h-screen flex-col">
