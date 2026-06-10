@@ -26,7 +26,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { createBusiness, deleteBusiness } from '@/app/actions/business'
-import { Building2, Plus, Trash2, ExternalLink } from 'lucide-react'
+import { PaymentForm } from '@/components/payment-form'
+import { Building2, Plus, Trash2, ExternalLink, ArrowRight, CreditCard } from 'lucide-react'
 import type { Business } from '@/lib/db/schema'
 
 interface BusinessesManagerProps {
@@ -44,6 +45,8 @@ function slugify(text: string) {
     .replace(/-+/g, '-')
 }
 
+type DialogStep = 'details' | 'payment'
+
 export function BusinessesManager({
   businesses,
   selectedBusinessId,
@@ -51,8 +54,8 @@ export function BusinessesManager({
 }: BusinessesManagerProps) {
   const router = useRouter()
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [dialogStep, setDialogStep] = useState<DialogStep>('details')
   const [deleteTarget, setDeleteTarget] = useState<Business | null>(null)
-  const [loading, setLoading] = useState(false)
 
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
@@ -60,26 +63,35 @@ export function BusinessesManager({
 
   const handleNameChange = (value: string) => {
     setName(value)
-    // Auto-generate slug from name if user hasn't manually edited it
     setSlug(slugify(value))
   }
 
-  const handleCreate = async () => {
+  const resetDialog = () => {
+    setDialogStep('details')
+    setName('')
+    setSlug('')
+    setDescription('')
+  }
+
+  const handleDialogOpenChange = (open: boolean) => {
+    setDialogOpen(open)
+    if (!open) resetDialog()
+  }
+
+  const handleProceedToPayment = () => {
     if (!name.trim()) return
-    setLoading(true)
-    try {
-      const biz = await createBusiness({ name, slug, description })
-      setDialogOpen(false)
-      setName('')
-      setSlug('')
-      setDescription('')
-      onSelectBusiness(biz.id)
-      router.refresh()
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to create business')
-    } finally {
-      setLoading(false)
-    }
+    setDialogStep('payment')
+  }
+
+  const handlePay = async () => {
+    const biz = await createBusiness({ name, slug, description, membershipPaid: true })
+    onSelectBusiness(biz.id)
+  }
+
+  const handlePaymentSuccess = () => {
+    setDialogOpen(false)
+    resetDialog()
+    router.refresh()
   }
 
   const handleDelete = async () => {
@@ -105,7 +117,7 @@ export function BusinessesManager({
             Create and manage your businesses. Clients book via their unique URL.
           </p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
           <DialogTrigger asChild>
             <Button size="sm">
               <Plus className="h-4 w-4 mr-1" />
@@ -113,52 +125,82 @@ export function BusinessesManager({
             </Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create Business</DialogTitle>
-            </DialogHeader>
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="biz-name">Business Name</Label>
-                <Input
-                  id="biz-name"
-                  value={name}
-                  onChange={(e) => handleNameChange(e.target.value)}
-                  placeholder="My Salon"
+            {dialogStep === 'details' ? (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Building2 className="h-5 w-5" />
+                    New Business — Step 1 of 2
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="biz-name">Business Name</Label>
+                    <Input
+                      id="biz-name"
+                      value={name}
+                      onChange={(e) => handleNameChange(e.target.value)}
+                      placeholder="My Salon"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="biz-slug">
+                      URL Slug
+                      <span className="text-muted-foreground font-normal ml-1">
+                        (/{slug || 'your-slug'}/book)
+                      </span>
+                    </Label>
+                    <Input
+                      id="biz-slug"
+                      value={slug}
+                      onChange={(e) => setSlug(slugify(e.target.value))}
+                      placeholder="my-salon"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="biz-desc">Description (optional)</Label>
+                    <Textarea
+                      id="biz-desc"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      rows={2}
+                      placeholder="A short description shown on the booking page"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleProceedToPayment} disabled={!name.trim()}>
+                    <CreditCard className="h-4 w-4" />
+                    Proceed to Payment
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </DialogFooter>
+              </>
+            ) : (
+              <div className="space-y-4">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5" />
+                    New Business — Step 2 of 2: Payment
+                  </DialogTitle>
+                </DialogHeader>
+                <p className="text-sm text-muted-foreground">
+                  Complete the membership payment to create <strong>{name}</strong>.
+                </p>
+                <PaymentForm
+                  onPay={handlePay}
+                  onSuccess={handlePaymentSuccess}
+                  successTitle="Business Created!"
+                  successDescription={`"${name}" has been added to your account.`}
                 />
+                <Button variant="ghost" size="sm" className="w-full" onClick={() => setDialogStep('details')}>
+                  ← Back to Details
+                </Button>
               </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="biz-slug">
-                  URL Slug
-                  <span className="text-muted-foreground font-normal ml-1">
-                    (/{slug || 'your-slug'}/book)
-                  </span>
-                </Label>
-                <Input
-                  id="biz-slug"
-                  value={slug}
-                  onChange={(e) => setSlug(slugify(e.target.value))}
-                  placeholder="my-salon"
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="biz-desc">Description (optional)</Label>
-                <Textarea
-                  id="biz-desc"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={2}
-                  placeholder="A short description shown on the booking page"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreate} disabled={loading || !name.trim()}>
-                {loading ? 'Creating…' : 'Create'}
-              </Button>
-            </DialogFooter>
+            )}
           </DialogContent>
         </Dialog>
       </div>
@@ -256,4 +298,6 @@ export function BusinessesManager({
       </AlertDialog>
     </div>
   )
+}
+
 }

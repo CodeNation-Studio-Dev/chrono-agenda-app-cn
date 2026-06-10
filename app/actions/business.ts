@@ -71,6 +71,7 @@ export async function createBusiness(data: {
   description?: string
   logoUrl?: string | null
   slug?: string
+  membershipPaid?: boolean
 }) {
   const adminId = await requireAdmin()
 
@@ -92,6 +93,8 @@ export async function createBusiness(data: {
       logoUrl: data.logoUrl || null,
       slug,
       ownerId: adminId,
+      membershipPaid: data.membershipPaid ?? false,
+      membershipPaidAt: data.membershipPaid ? new Date() : null,
     })
     .returning()
 

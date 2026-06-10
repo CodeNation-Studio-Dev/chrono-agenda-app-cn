@@ -12,9 +12,13 @@ import { CreditCard, CheckCircle2, Loader2 } from 'lucide-react'
 
 interface PaymentFormProps {
   onSuccess: () => void
+  /** Custom async action to run on successful payment. Defaults to upgradeUserToAdmin + redirect /admin. */
+  onPay?: () => Promise<void>
+  successTitle?: string
+  successDescription?: string
 }
 
-export function PaymentForm({ onSuccess }: PaymentFormProps) {
+export function PaymentForm({ onSuccess, onPay, successTitle, successDescription }: PaymentFormProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [cardNumber, setCardNumber] = useState('')
@@ -32,25 +36,30 @@ export function PaymentForm({ onSuccess }: PaymentFormProps) {
     await new Promise((resolve) => setTimeout(resolve, 1500))
 
     try {
-      // Upgrade user to admin role
-      await upgradeUserToAdmin()
-      
+      if (onPay) {
+        await onPay()
+      } else {
+        // Default: upgrade user to admin role
+        await upgradeUserToAdmin()
+      }
+
       setPaymentComplete(true)
       toast({
-        title: 'Payment Successful!',
-        description: 'Your account has been upgraded to Admin.',
+        title: successTitle ?? 'Payment Successful!',
+        description: successDescription ?? 'Your account has been upgraded to Admin.',
       })
 
-      // Wait a moment then redirect
       setTimeout(() => {
         onSuccess()
-        router.push('/admin')
-        router.refresh()
+        if (!onPay) {
+          router.push('/admin')
+          router.refresh()
+        }
       }, 1500)
     } catch (error) {
       toast({
         title: 'Payment Failed',
-        description: 'There was an error processing your payment. Please try again.',
+        description: error instanceof Error ? error.message : 'There was an error processing your payment. Please try again.',
         variant: 'destructive',
       })
     } finally {
@@ -65,9 +74,9 @@ export function PaymentForm({ onSuccess }: PaymentFormProps) {
           <div className="flex justify-center mb-4">
             <CheckCircle2 className="h-16 w-16 text-green-500" />
           </div>
-          <CardTitle className="text-2xl">Payment Successful!</CardTitle>
+          <CardTitle className="text-2xl">{successTitle ?? 'Payment Successful!'}</CardTitle>
           <CardDescription>
-            Your account has been upgraded to Admin. Redirecting...
+            {successDescription ?? 'Your account has been upgraded to Admin. Redirecting...'}
           </CardDescription>
         </CardHeader>
       </Card>
