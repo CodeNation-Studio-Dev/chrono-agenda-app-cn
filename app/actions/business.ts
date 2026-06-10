@@ -148,8 +148,6 @@ export async function joinBusiness(businessId: number) {
     .insert(businessMembers)
     .values({ businessId, userId })
     .onConflictDoNothing()
-
-  revalidatePath(`/${biz[0].slug}/book`)
 }
 
 // Check whether the current user is a member of a business
