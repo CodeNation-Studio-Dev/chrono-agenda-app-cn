@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
 import { LanguageSelector } from '@/components/language-selector'
 import { CalendarDays } from 'lucide-react'
+import { CreateBusinessRequest } from '@/components/create-business-request'
 
 export function AuthForm({
   mode,
@@ -29,6 +30,7 @@ export function AuthForm({
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [showBusinessRequest, setShowBusinessRequest] = useState(false)
 
   const isSignUp = mode === 'sign-up'
 
@@ -48,7 +50,13 @@ export function AuthForm({
       return
     }
 
-    // After auth, redirect to the business booking page (or home for admin)
+    // After sign up, show the business request option
+    if (isSignUp) {
+      setShowBusinessRequest(true)
+      return
+    }
+
+    // After sign in, redirect to the business booking page (or home for admin)
     const destination = businessSlug ? `/${businessSlug}/book` : '/'
     router.push(destination)
     router.refresh()
@@ -56,6 +64,14 @@ export function AuthForm({
 
   const signInHref = businessSlug ? `/${businessSlug}/sign-in` : '/sign-in'
   const signUpHref = businessSlug ? `/${businessSlug}/sign-up` : '/sign-up'
+
+  if (showBusinessRequest) {
+    return (
+      <main className="min-h-svh bg-background flex items-center justify-center px-4">
+        <CreateBusinessRequest />
+      </main>
+    )
+  }
 
   return (
     <main className="min-h-svh bg-background flex items-center justify-center px-4">
