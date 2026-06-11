@@ -304,8 +304,9 @@ export function BusinessesManager({
                     asChild
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <a href={`/${biz.slug}/sign-up`} target="_blank" rel="noopener noreferrer">
+                    <a href={`/${biz.slug}/sign-up`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
                       <UserPlus className="h-3.5 w-3.5" />
+                      Sign Up
                     </a>
                   </Button>
                   <Button
@@ -314,8 +315,9 @@ export function BusinessesManager({
                     asChild
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <a href={`/${biz.slug}/book`} target="_blank" rel="noopener noreferrer">
+                    <a href={`/${biz.slug}/book`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
                       <ExternalLink className="h-3.5 w-3.5" />
+                      Book
                     </a>
                   </Button>
                   <Button
