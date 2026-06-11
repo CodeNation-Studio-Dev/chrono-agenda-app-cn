@@ -11,7 +11,6 @@ import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
 import { LanguageSelector } from '@/components/language-selector'
 import { CalendarDays } from 'lucide-react'
-import { CreateBusinessRequest } from '@/components/create-business-request'
 
 export function AuthForm({
   mode,
@@ -31,7 +30,6 @@ export function AuthForm({
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [resetMessage, setResetMessage] = useState<string | null>(null)
-  const [showBusinessRequest, setShowBusinessRequest] = useState(false)
 
   const isSignUp = mode === 'sign-up'
 
@@ -52,15 +50,10 @@ export function AuthForm({
       return
     }
 
-    // After sign up on a business slug, go directly to booking.
-    // For generic sign-up, keep the business request flow.
+    // After sign up, redirect to verify email page
+    // Then user will be redirected to booking after verification
     if (isSignUp) {
-      if (businessSlug) {
-        router.push(`/${businessSlug}/book`)
-        router.refresh()
-      } else {
-        setShowBusinessRequest(true)
-      }
+      router.push('/verify-email')
       return
     }
 
@@ -93,14 +86,6 @@ export function AuthForm({
     }
 
     setResetMessage(t.auth.resetEmailSent)
-  }
-
-  if (showBusinessRequest) {
-    return (
-      <main className="min-h-svh bg-background flex items-center justify-center px-4">
-        <CreateBusinessRequest />
-      </main>
-    )
   }
 
   return (
