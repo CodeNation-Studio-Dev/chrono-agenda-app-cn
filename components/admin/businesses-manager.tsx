@@ -48,6 +48,7 @@ function slugify(text: string) {
 }
 
 type DialogStep = 'details' | 'payment'
+type TrialFilter = 'all' | 'trial-active' | 'trial-expired' | 'paid'
 
 export function BusinessesManager({
   businesses,
@@ -58,6 +59,7 @@ export function BusinessesManager({
   const { t } = useLanguage()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogStep, setDialogStep] = useState<DialogStep>('details')
+  const [trialFilter, setTrialFilter] = useState<TrialFilter>('all')
   const [deleteTarget, setDeleteTarget] = useState<Business | null>(null)
   const [payTarget, setPayTarget] = useState<Business | null>(null)
 
@@ -135,6 +137,27 @@ export function BusinessesManager({
     router.refresh()
   }
 
+  const getTrialStatus = (biz: Business) => {
+    if (!biz.trialEndsAt) return 'paid' as const
+    const now = Date.now()
+    const trialEnd = new Date(biz.trialEndsAt as unknown as string).getTime()
+    if (Number.isNaN(trialEnd) || trialEnd < now) return 'trial-expired' as const
+    return 'trial-active' as const
+  }
+
+  const getTrialDaysLeft = (biz: Business) => {
+    if (!biz.trialEndsAt) return null
+    const now = Date.now()
+    const trialEnd = new Date(biz.trialEndsAt as unknown as string).getTime()
+    if (Number.isNaN(trialEnd) || trialEnd < now) return 0
+    return Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24))
+  }
+
+  const filteredBusinesses = businesses.filter((biz) => {
+    if (trialFilter === 'all') return true
+    return getTrialStatus(biz) === trialFilter
+  })
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -146,6 +169,20 @@ export function BusinessesManager({
           <p className="text-sm text-muted-foreground">
             {t.admin.myBusinessesDesc}
           </p>
+          <div className="flex flex-wrap items-center gap-2 mt-2">
+            <Button size="sm" variant={trialFilter === 'all' ? 'default' : 'outline'} onClick={() => setTrialFilter('all')}>
+              All
+            </Button>
+            <Button size="sm" variant={trialFilter === 'trial-active' ? 'default' : 'outline'} onClick={() => setTrialFilter('trial-active')}>
+              Trial Active
+            </Button>
+            <Button size="sm" variant={trialFilter === 'trial-expired' ? 'default' : 'outline'} onClick={() => setTrialFilter('trial-expired')}>
+              Trial Expired
+            </Button>
+            <Button size="sm" variant={trialFilter === 'paid' ? 'default' : 'outline'} onClick={() => setTrialFilter('paid')}>
+              Paid
+            </Button>
+          </div>
         </div>
         <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
           <DialogTrigger asChild>
@@ -243,9 +280,13 @@ export function BusinessesManager({
             {t.admin.noBusinessesDesc}
           </p>
         </Card>
+      ) : filteredBusinesses.length === 0 ? (
+        <Card className="p-8 text-center">
+          <p className="text-sm text-muted-foreground">No businesses found for the selected filter.</p>
+        </Card>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {businesses.map((biz) => (
+          {filteredBusinesses.map((biz) => (
             <Card
               key={biz.id}
               className={`p-4 cursor-pointer transition-colors ${
@@ -266,6 +307,21 @@ export function BusinessesManager({
                   <p className="text-sm text-muted-foreground line-clamp-2">{biz.description}</p>
                 )}
                 <p className="text-xs text-muted-foreground font-mono">/{biz.slug}/book</p>
+                {getTrialStatus(biz) === 'trial-active' && (
+                  <div className="inline-flex items-center rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-xs text-emerald-700">
+                    Free Trial · {getTrialDaysLeft(biz)} day(s) left
+                  </div>
+                )}
+                {getTrialStatus(biz) === 'trial-expired' && (
+                  <div className="inline-flex items-center rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-xs text-amber-700">
+                    Trial Expired
+                  </div>
+                )}
+                {getTrialStatus(biz) === 'paid' && (
+                  <div className="inline-flex items-center rounded-md border border-primary/20 bg-primary/5 px-2 py-1 text-xs text-primary">
+                    Paid Plan
+                  </div>
+                )}
                 {biz.isDisabled && (
                   <div className="rounded-md border border-destructive/30 bg-destructive/10 p-2">
                     <p className="text-xs text-destructive flex items-center gap-1">
