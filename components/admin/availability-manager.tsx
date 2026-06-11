@@ -51,6 +51,12 @@ export function AvailabilityManager({ slots, businessId }: AvailabilityManagerPr
   // Dates that have slots
   const datesWithSlots = Object.keys(slotsByDate)
 
+  // KPI metrics for selected business availability
+  const totalSlots = slots.length
+  const bookedSlots = slots.filter((slot) => slot.isBooked).length
+  const availableSlots = totalSlots - bookedSlots
+  const utilizationRate = totalSlots > 0 ? Math.round((bookedSlots / totalSlots) * 100) : 0
+
   const handleCreateSlot = async () => {
     if (!selectedDate) return
     setLoading(true)
@@ -80,9 +86,38 @@ export function AvailabilityManager({ slots, businessId }: AvailabilityManagerPr
   }
 
   return (
-    <div className="grid lg:grid-cols-2 gap-6">
-      {/* Calendar */}
-      <Card className="p-6">
+    <div className="space-y-6">
+      {/* KPI strip */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <Card className="p-4">
+          <p className="text-xs text-muted-foreground">
+            {language === 'es' ? 'Total Horarios' : 'Total Slots'}
+          </p>
+          <p className="text-2xl font-semibold text-foreground">{totalSlots}</p>
+        </Card>
+        <Card className="p-4">
+          <p className="text-xs text-muted-foreground">
+            {language === 'es' ? 'Reservados' : 'Booked'}
+          </p>
+          <p className="text-2xl font-semibold text-foreground">{bookedSlots}</p>
+        </Card>
+        <Card className="p-4">
+          <p className="text-xs text-muted-foreground">
+            {language === 'es' ? 'Disponibles' : 'Available'}
+          </p>
+          <p className="text-2xl font-semibold text-foreground">{availableSlots}</p>
+        </Card>
+        <Card className="p-4">
+          <p className="text-xs text-muted-foreground">
+            {language === 'es' ? 'Tasa de Ocupacion' : 'Utilization Rate'}
+          </p>
+          <p className="text-2xl font-semibold text-foreground">{utilizationRate}%</p>
+        </Card>
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Calendar */}
+        <Card className="p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-foreground flex items-center gap-2">
             <CalendarDays className="h-5 w-5 text-primary" />
@@ -105,10 +140,10 @@ export function AvailabilityManager({ slots, businessId }: AvailabilityManagerPr
         <p className="text-xs text-muted-foreground mt-4">
           {language === 'es' ? 'Las fechas con horarios disponibles estan resaltadas' : 'Dates with availability slots are highlighted'}
         </p>
-      </Card>
+        </Card>
 
-      {/* Slots for Selected Date */}
-      <Card className="p-6">
+        {/* Slots for Selected Date */}
+        <Card className="p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="font-semibold text-foreground">
@@ -208,7 +243,8 @@ export function AvailabilityManager({ slots, businessId }: AvailabilityManagerPr
               ))}
           </div>
         )}
-      </Card>
+        </Card>
+      </div>
     </div>
   )
 }
