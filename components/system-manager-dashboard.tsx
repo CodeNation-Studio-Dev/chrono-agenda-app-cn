@@ -28,6 +28,23 @@ function formatDate(value: Date | string | null) {
   return date.toLocaleDateString()
 }
 
+function getTrialMeta(trialEndsAt: Date | string | null) {
+  if (!trialEndsAt) {
+    return { isTrial: false, isExpired: false, daysLeft: null as number | null }
+  }
+  const end = trialEndsAt instanceof Date ? trialEndsAt.getTime() : new Date(trialEndsAt).getTime()
+  const now = Date.now()
+  if (Number.isNaN(end)) {
+    return { isTrial: true, isExpired: true, daysLeft: 0 }
+  }
+  const daysLeft = Math.ceil((end - now) / (1000 * 60 * 60 * 24))
+  return {
+    isTrial: true,
+    isExpired: end < now,
+    daysLeft,
+  }
+}
+
 export function SystemManagerDashboard({
   businesses,
   admins,
@@ -82,6 +99,7 @@ export function SystemManagerDashboard({
           <div className="space-y-4">
             {businesses.map(({ business, owner }) => {
               const isPending = pendingBusinessId === business.id
+              const trial = getTrialMeta(business.trialEndsAt)
 
               return (
                 <Card key={business.id} className="p-4 space-y-4">
@@ -100,12 +118,28 @@ export function SystemManagerDashboard({
                       <Badge variant={business.isDisabled ? 'destructive' : 'outline'}>
                         {business.isDisabled ? t.systemManager.disabled : t.systemManager.active}
                       </Badge>
+                      {trial.isTrial && !trial.isExpired ? (
+                        <Badge variant="outline" className="border-emerald-500/40 text-emerald-700">
+                          Free Trial ({Math.max(trial.daysLeft ?? 0, 0)}d left)
+                        </Badge>
+                      ) : null}
+                      {trial.isTrial && trial.isExpired ? (
+                        <Badge variant="outline" className="border-amber-500/40 text-amber-700">
+                          Trial Expired
+                        </Badge>
+                      ) : null}
+                      {!trial.isTrial && business.membershipPaid ? (
+                        <Badge variant="outline" className="border-primary/30 text-primary">
+                          Paid Plan
+                        </Badge>
+                      ) : null}
                     </div>
                   </div>
 
-                  <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2 lg:grid-cols-5">
                     <p>{t.systemManager.createdAt} {formatDate(business.createdAt)}</p>
                     <p>{t.systemManager.paidAt} {formatDate(business.membershipPaidAt)}</p>
+                    <p>Trial Ends: {formatDate(business.trialEndsAt)}</p>
                     <p>{t.systemManager.disabledAt} {formatDate(business.disabledAt)}</p>
                     <p>{t.systemManager.reason} {business.disabledReason || t.systemManager.na}</p>
                   </div>
