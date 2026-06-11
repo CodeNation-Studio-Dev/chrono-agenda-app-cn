@@ -1,6 +1,7 @@
 ﻿'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { authClient } from '@/lib/auth-client'
 import { useLanguage } from '@/lib/i18n/language-context'
@@ -15,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { LanguageSelector } from '@/components/language-selector'
-import { CalendarDays, LogOut, Settings, Calendar, User } from 'lucide-react'
+import { LogOut, Settings, Calendar, User } from 'lucide-react'
 import type { User as UserType } from '@/lib/db/schema'
 
 interface NavbarProps {
@@ -48,7 +49,14 @@ export function Navbar({ user, businessSlug }: NavbarProps) {
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
           <div className="p-2 bg-primary/10 rounded-lg">
-            <CalendarDays className="h-5 w-5 text-primary" />
+            <Image
+              src="/icon.jpg"
+              alt="Chrono"
+              width={20}
+              height={20}
+              className="h-5 w-5 rounded-sm object-cover"
+              priority
+            />
           </div>
           <span className="font-semibold text-foreground">Chrono</span>
         </Link>
