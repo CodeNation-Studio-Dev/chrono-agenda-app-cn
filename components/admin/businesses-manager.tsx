@@ -201,7 +201,7 @@ export function BusinessesManager({
                 setCurrentPage(1)
               }}
             >
-              All
+              {t.admin.filterAllBusinesses}
             </Button>
             <Button
               size="sm"
@@ -211,7 +211,7 @@ export function BusinessesManager({
                 setCurrentPage(1)
               }}
             >
-              Trial Active
+              {t.admin.filterTrialActive}
             </Button>
             <Button
               size="sm"
@@ -221,7 +221,7 @@ export function BusinessesManager({
                 setCurrentPage(1)
               }}
             >
-              Trial Expired
+              {t.admin.filterTrialExpired}
             </Button>
             <Button
               size="sm"
@@ -231,7 +231,7 @@ export function BusinessesManager({
                 setCurrentPage(1)
               }}
             >
-              Paid
+              {t.admin.filterPaid}
             </Button>
           </div>
           <div className="mt-3 w-full max-w-sm">
@@ -241,7 +241,7 @@ export function BusinessesManager({
                 setSearchQuery(event.target.value)
                 setCurrentPage(1)
               }}
-              placeholder="Search by business name, slug or description"
+              placeholder={t.admin.searchBusinessesPlaceholder}
             />
           </div>
         </div>
@@ -343,7 +343,7 @@ export function BusinessesManager({
         </Card>
       ) : searchedBusinesses.length === 0 ? (
         <Card className="p-8 text-center">
-          <p className="text-sm text-muted-foreground">No businesses found for the selected filter.</p>
+          <p className="text-sm text-muted-foreground">{t.admin.noBusinessesForFilter}</p>
         </Card>
       ) : (
         <>
@@ -371,24 +371,24 @@ export function BusinessesManager({
                 <p className="text-xs text-muted-foreground font-mono">/{biz.slug}/book</p>
                 {getTrialStatus(biz) === 'trial-active' && (
                   <div className="inline-flex items-center rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-xs text-emerald-700">
-                    Free Trial · {getTrialDaysLeft(biz)} day(s) left
+                    {t.admin.trialActiveBadge} · {getTrialDaysLeft(biz)} {t.admin.daysLeftLabel}
                   </div>
                 )}
                 {getTrialStatus(biz) === 'trial-expired' && (
                   <div className="inline-flex items-center rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-xs text-amber-700">
-                    Trial Expired
+                    {t.admin.trialExpiredBadge}
                   </div>
                 )}
                 {getTrialStatus(biz) === 'paid' && (
                   <div className="inline-flex items-center rounded-md border border-primary/20 bg-primary/5 px-2 py-1 text-xs text-primary">
-                    Paid Plan
+                    {t.admin.paidPlanBadge}
                   </div>
                 )}
                 {biz.isDisabled && (
                   <div className="rounded-md border border-destructive/30 bg-destructive/10 p-2">
                     <p className="text-xs text-destructive flex items-center gap-1">
                       <AlertTriangle className="h-3.5 w-3.5" />
-                      This business is disabled. Complete payment to reactivate.
+                      {t.admin.disabledBusinessHint}
                     </p>
                     <Button
                       size="sm"
@@ -400,7 +400,7 @@ export function BusinessesManager({
                       }}
                     >
                       <CreditCard className="h-3.5 w-3.5" />
-                      Pay Membership
+                      {t.admin.payMembershipBtn}
                     </Button>
                   </div>
                 )}
@@ -424,7 +424,7 @@ export function BusinessesManager({
                   >
                     <a href={`/${biz.slug}/sign-up`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
                       <UserPlus className="h-3.5 w-3.5" />
-                      Sign Up
+                      {t.admin.signUpBtn}
                     </a>
                   </Button>
                   <Button
@@ -435,7 +435,7 @@ export function BusinessesManager({
                   >
                     <a href={`/${biz.slug}/book`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
                       <ExternalLink className="h-3.5 w-3.5" />
-                      Book
+                      {t.admin.bookBtn}
                     </a>
                   </Button>
                   <Button
@@ -457,7 +457,7 @@ export function BusinessesManager({
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-muted-foreground">
-              Page {currentPage} of {totalPages}
+              {t.admin.pageLabel} {currentPage} / {totalPages}
             </p>
             <div className="flex items-center gap-2">
               <Button
@@ -466,7 +466,7 @@ export function BusinessesManager({
                 onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
               >
-                Previous
+                {t.admin.prevPage}
               </Button>
               <Button
                 variant="outline"
@@ -474,7 +474,7 @@ export function BusinessesManager({
                 onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages}
               >
-                Next
+                {t.admin.nextPage}
               </Button>
             </div>
           </div>
@@ -506,19 +506,23 @@ export function BusinessesManager({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CreditCard className="h-5 w-5" />
-              Reactivate Business
+              {t.admin.reactivateBusinessTitle}
             </DialogTitle>
             <DialogDescription>
               {payTarget
-                ? `This business is disabled. Complete payment to reactivate ${payTarget.name}.`
-                : 'This business is disabled. Complete payment to reactivate it.'}
+                ? t.admin.reactivateBusinessDescWithName.replace('{name}', payTarget.name)
+                : t.admin.reactivateBusinessDesc}
             </DialogDescription>
           </DialogHeader>
           <PaymentForm
             onPay={handleDisabledPayment}
             onSuccess={handleDisabledPaymentSuccess}
-            successTitle="Business Reactivated"
-            successDescription={payTarget ? `${payTarget.name} is active again.` : 'Business is active again.'}
+            successTitle={t.admin.businessReactivatedSuccess}
+            successDescription={
+              payTarget
+                ? t.admin.businessReactivatedDescWithName.replace('{name}', payTarget.name)
+                : t.admin.businessReactivatedDesc
+            }
           />
         </DialogContent>
       </Dialog>

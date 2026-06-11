@@ -40,7 +40,7 @@ interface UsersManagerProps {
   businessId: number
 }
 
-type UserFilter = 'all' | 'admin' | 'client' | 'pending'
+type UserFilter = 'all' | 'admin' | 'client'
 const ITEMS_PER_PAGE = 10
 
 export function UsersManager({ users, currentUserId, slots, meetingTypes, businessId }: UsersManagerProps) {
@@ -189,16 +189,6 @@ export function UsersManager({ users, currentUserId, slots, meetingTypes, busine
           }}
         >
           {t.admin.roleClient}
-        </Button>
-        <Button
-          size="sm"
-          variant={userFilter === 'pending' ? 'default' : 'outline'}
-          onClick={() => {
-            setUserFilter('pending')
-            setCurrentPage(1)
-          }}
-        >
-          {t.admin.rolePending}
         </Button>
       </div>
 
