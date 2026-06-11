@@ -62,6 +62,7 @@ export function BusinessesManager({
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
   const [description, setDescription] = useState('')
+  const isFirstBusiness = businesses.length === 0
 
   const handleNameChange = (value: string) => {
     setName(value)
@@ -80,8 +81,22 @@ export function BusinessesManager({
     if (!open) resetDialog()
   }
 
-  const handleProceedToPayment = () => {
+  const handleProceedToPayment = async () => {
     if (!name.trim()) return
+
+    if (isFirstBusiness) {
+      try {
+        const biz = await createBusiness({ name, slug, description })
+        onSelectBusiness(biz.id)
+        setDialogOpen(false)
+        resetDialog()
+        router.refresh()
+      } catch (err) {
+        alert(err instanceof Error ? err.message : t.admin.failedToCreateBusiness)
+      }
+      return
+    }
+
     setDialogStep('payment')
   }
 
@@ -175,9 +190,9 @@ export function BusinessesManager({
                     {t.common.cancel}
                   </Button>
                   <Button onClick={handleProceedToPayment} disabled={!name.trim()}>
-                    <CreditCard className="h-4 w-4" />
-                    {t.admin.proceedToPayment}
-                    <ArrowRight className="h-4 w-4" />
+                    {isFirstBusiness ? <Building2 className="h-4 w-4" /> : <CreditCard className="h-4 w-4" />}
+                    {isFirstBusiness ? t.admin.newBusiness : t.admin.proceedToPayment}
+                    {!isFirstBusiness && <ArrowRight className="h-4 w-4" />}
                   </Button>
                 </DialogFooter>
               </>
