@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import {
   Dialog,
   DialogContent,
@@ -39,11 +40,21 @@ export function BookingsList({ bookings, availableSlots }: BookingsListProps) {
   const [rescheduleDialog, setRescheduleDialog] = useState<BookingWithDetails | null>(null)
   const [selectedNewSlot, setSelectedNewSlot] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
+  const [exactDate, setExactDate] = useState('')
+  const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
 
   const dateLocale = language === 'es' ? es : enUS
 
-  const activeBookings = bookings.filter(b => b.booking.status === 'confirmed' || b.booking.status === 'rescheduled')
-  const pastBookings = bookings.filter(b => b.booking.status === 'cancelled')
+  const filteredBookings = bookings.filter(({ slot }) => {
+    if (exactDate && slot.date !== exactDate) return false
+    if (fromDate && slot.date < fromDate) return false
+    if (toDate && slot.date > toDate) return false
+    return true
+  })
+
+  const activeBookings = filteredBookings.filter(b => b.booking.status === 'confirmed' || b.booking.status === 'rescheduled')
+  const pastBookings = filteredBookings.filter(b => b.booking.status === 'cancelled')
 
   const handleCancel = async () => {
     if (!cancelDialog) return
@@ -102,6 +113,30 @@ export function BookingsList({ bookings, availableSlots }: BookingsListProps) {
 
   return (
     <div className="space-y-8">
+      <section className="space-y-3">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Input type="date" value={exactDate} onChange={(event) => setExactDate(event.target.value)} aria-label={t.bookings.filterDate} />
+          <Input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} aria-label={t.bookings.filterFromDate} />
+          <Input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} aria-label={t.bookings.filterToDate} />
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setExactDate('')
+            setFromDate('')
+            setToDate('')
+          }}
+        >
+          {t.bookings.clearDateFilters}
+        </Button>
+      </section>
+
+      {filteredBookings.length === 0 ? (
+        <Card className="p-8 text-center text-muted-foreground">{t.bookings.noBookingsForDateFilter}</Card>
+      ) : null}
+
       {/* Active Bookings */}
       {activeBookings.length > 0 && (
         <section>

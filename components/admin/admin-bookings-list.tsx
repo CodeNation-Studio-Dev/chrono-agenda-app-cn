@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Calendar as CalendarPicker } from '@/components/ui/calendar'
 import {
   AlertDialog,
@@ -45,12 +46,21 @@ export function AdminBookingsList({ bookings, businessId }: AdminBookingsListPro
   const [selectedDate, setSelectedDate] = useState<Date | undefined>()
   const [selectedBookingId, setSelectedBookingId] = useState<number | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
+  const [exactDate, setExactDate] = useState('')
+  const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
 
   const activeBookings = bookings.filter(b => b.booking.status === 'confirmed' || b.booking.status === 'rescheduled')
+  const filteredActiveBookings = activeBookings.filter(({ slot }) => {
+    if (exactDate && slot.date !== exactDate) return false
+    if (fromDate && slot.date < fromDate) return false
+    if (toDate && slot.date > toDate) return false
+    return true
+  })
 
   const bookingsByDate = useMemo(() => {
     const grouped: Record<string, BookingWithDetails[]> = {}
-    for (const item of activeBookings) {
+    for (const item of filteredActiveBookings) {
       const key = item.slot.date
       if (!grouped[key]) grouped[key] = []
       grouped[key].push(item)
@@ -61,12 +71,12 @@ export function AdminBookingsList({ bookings, businessId }: AdminBookingsListPro
     }
 
     return grouped
-  }, [activeBookings])
+  }, [filteredActiveBookings])
 
   const bookedDateKeys = useMemo(() => new Set(Object.keys(bookingsByDate)), [bookingsByDate])
   const meetingTypeLegend = useMemo(() => {
     const unique = new Map<number, { id: number; name: string; color: string }>()
-    for (const item of activeBookings) {
+    for (const item of filteredActiveBookings) {
       unique.set(item.meetingType.id, {
         id: item.meetingType.id,
         name: item.meetingType.name,
@@ -74,13 +84,13 @@ export function AdminBookingsList({ bookings, businessId }: AdminBookingsListPro
       })
     }
     return Array.from(unique.values()).sort((a, b) => a.name.localeCompare(b.name))
-  }, [activeBookings])
+  }, [filteredActiveBookings])
   const selectedDateKey = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null
   const selectedDateBookings = selectedDateKey ? (bookingsByDate[selectedDateKey] ?? []) : []
   const selectedBooking = selectedDateBookings.find((item) => item.booking.id === selectedBookingId)
     ?? selectedDateBookings[0]
-  const totalPages = Math.max(1, Math.ceil(activeBookings.length / ITEMS_PER_PAGE))
-  const paginatedActiveBookings = activeBookings.slice(
+  const totalPages = Math.max(1, Math.ceil(filteredActiveBookings.length / ITEMS_PER_PAGE))
+  const paginatedActiveBookings = filteredActiveBookings.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE,
   )
@@ -132,7 +142,7 @@ export function AdminBookingsList({ bookings, businessId }: AdminBookingsListPro
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
           <Users className="h-5 w-5 text-primary" />
-          {t.bookings.upcomingMeetings} ({activeBookings.length})
+          {t.bookings.upcomingMeetings} ({filteredActiveBookings.length})
         </h2>
         <div className="inline-flex rounded-md border p-1 bg-card">
           <Button
@@ -163,7 +173,39 @@ export function AdminBookingsList({ bookings, businessId }: AdminBookingsListPro
         </div>
       </div>
 
-      {viewMode === 'list' ? (
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Input type="date" value={exactDate} onChange={(event) => {
+          setExactDate(event.target.value)
+          setCurrentPage(1)
+        }} aria-label={t.bookings.filterDate} />
+        <Input type="date" value={fromDate} onChange={(event) => {
+          setFromDate(event.target.value)
+          setCurrentPage(1)
+        }} aria-label={t.bookings.filterFromDate} />
+        <Input type="date" value={toDate} onChange={(event) => {
+          setToDate(event.target.value)
+          setCurrentPage(1)
+        }} aria-label={t.bookings.filterToDate} />
+      </div>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={() => {
+          setExactDate('')
+          setFromDate('')
+          setToDate('')
+          setCurrentPage(1)
+        }}
+      >
+        {t.bookings.clearDateFilters}
+      </Button>
+
+      {filteredActiveBookings.length === 0 ? (
+        <Card className="p-8 text-center text-muted-foreground">{t.bookings.noBookingsForDateFilter}</Card>
+      ) : null}
+
+      {filteredActiveBookings.length > 0 && viewMode === 'list' ? (
         <div className="space-y-4">
           {paginatedActiveBookings.map(({ booking, slot, meetingType, client }) => (
             <Card key={booking.id} className="p-6">
@@ -262,7 +304,7 @@ export function AdminBookingsList({ bookings, businessId }: AdminBookingsListPro
             </div>
           </div>
         </div>
-      ) : (
+      ) : filteredActiveBookings.length > 0 ? (
         <div className="grid gap-6 lg:grid-cols-[340px_1fr]">
           <Card className="p-4">
             <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
@@ -400,7 +442,7 @@ export function AdminBookingsList({ bookings, businessId }: AdminBookingsListPro
             )}
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   )
 }
