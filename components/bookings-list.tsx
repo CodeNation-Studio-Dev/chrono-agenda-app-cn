@@ -41,15 +41,11 @@ export function BookingsList({ bookings, availableSlots }: BookingsListProps) {
   const [selectedNewSlot, setSelectedNewSlot] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
   const [exactDate, setExactDate] = useState('')
-  const [fromDate, setFromDate] = useState('')
-  const [toDate, setToDate] = useState('')
 
   const dateLocale = language === 'es' ? es : enUS
 
   const filteredBookings = bookings.filter(({ slot }) => {
     if (exactDate && slot.date !== exactDate) return false
-    if (fromDate && slot.date < fromDate) return false
-    if (toDate && slot.date > toDate) return false
     return true
   })
 
@@ -114,10 +110,8 @@ export function BookingsList({ bookings, availableSlots }: BookingsListProps) {
   return (
     <div className="space-y-8">
       <section className="space-y-3">
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-1">
           <Input type="date" value={exactDate} onChange={(event) => setExactDate(event.target.value)} aria-label={t.bookings.filterDate} />
-          <Input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} aria-label={t.bookings.filterFromDate} />
-          <Input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} aria-label={t.bookings.filterToDate} />
         </div>
         <Button
           type="button"
@@ -125,8 +119,6 @@ export function BookingsList({ bookings, availableSlots }: BookingsListProps) {
           size="sm"
           onClick={() => {
             setExactDate('')
-            setFromDate('')
-            setToDate('')
           }}
         >
           {t.bookings.clearDateFilters}

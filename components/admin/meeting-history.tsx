@@ -37,8 +37,6 @@ export function MeetingHistory({ bookings }: MeetingHistoryProps) {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [exactDate, setExactDate] = useState('')
-  const [fromDate, setFromDate] = useState('')
-  const [toDate, setToDate] = useState('')
 
   // History = every booking, sorted by meeting date (most recent first)
   const sorted = [...bookings].sort((a, b) => {
@@ -52,8 +50,6 @@ export function MeetingHistory({ bookings }: MeetingHistoryProps) {
     : sorted.filter(b => b.booking.status === statusFilter)
   const filtered = filteredByStatus.filter(({ slot }) => {
     if (exactDate && slot.date !== exactDate) return false
-    if (fromDate && slot.date < fromDate) return false
-    if (toDate && slot.date > toDate) return false
     return true
   })
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE))
@@ -120,19 +116,11 @@ export function MeetingHistory({ bookings }: MeetingHistoryProps) {
         </Select>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-1">
         <Input type="date" value={exactDate} onChange={(event) => {
           setExactDate(event.target.value)
           setCurrentPage(1)
         }} aria-label={t.bookings.filterDate} />
-        <Input type="date" value={fromDate} onChange={(event) => {
-          setFromDate(event.target.value)
-          setCurrentPage(1)
-        }} aria-label={t.bookings.filterFromDate} />
-        <Input type="date" value={toDate} onChange={(event) => {
-          setToDate(event.target.value)
-          setCurrentPage(1)
-        }} aria-label={t.bookings.filterToDate} />
       </div>
       <Button
         type="button"
@@ -140,8 +128,6 @@ export function MeetingHistory({ bookings }: MeetingHistoryProps) {
         size="sm"
         onClick={() => {
           setExactDate('')
-          setFromDate('')
-          setToDate('')
           setCurrentPage(1)
         }}
       >

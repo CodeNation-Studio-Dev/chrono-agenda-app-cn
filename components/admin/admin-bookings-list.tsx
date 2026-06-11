@@ -47,14 +47,10 @@ export function AdminBookingsList({ bookings, businessId }: AdminBookingsListPro
   const [selectedBookingId, setSelectedBookingId] = useState<number | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [exactDate, setExactDate] = useState('')
-  const [fromDate, setFromDate] = useState('')
-  const [toDate, setToDate] = useState('')
 
   const activeBookings = bookings.filter(b => b.booking.status === 'confirmed' || b.booking.status === 'rescheduled')
   const filteredActiveBookings = activeBookings.filter(({ slot }) => {
     if (exactDate && slot.date !== exactDate) return false
-    if (fromDate && slot.date < fromDate) return false
-    if (toDate && slot.date > toDate) return false
     return true
   })
 
@@ -173,19 +169,11 @@ export function AdminBookingsList({ bookings, businessId }: AdminBookingsListPro
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-1">
         <Input type="date" value={exactDate} onChange={(event) => {
           setExactDate(event.target.value)
           setCurrentPage(1)
         }} aria-label={t.bookings.filterDate} />
-        <Input type="date" value={fromDate} onChange={(event) => {
-          setFromDate(event.target.value)
-          setCurrentPage(1)
-        }} aria-label={t.bookings.filterFromDate} />
-        <Input type="date" value={toDate} onChange={(event) => {
-          setToDate(event.target.value)
-          setCurrentPage(1)
-        }} aria-label={t.bookings.filterToDate} />
       </div>
       <Button
         type="button"
@@ -193,8 +181,6 @@ export function AdminBookingsList({ bookings, businessId }: AdminBookingsListPro
         size="sm"
         onClick={() => {
           setExactDate('')
-          setFromDate('')
-          setToDate('')
           setCurrentPage(1)
         }}
       >
