@@ -71,11 +71,14 @@ export function AuthForm({
       return
     }
 
-    persistBusinessSlug(businessSlug)
+    // Sign-in: delegate role-based redirect to server page
     const fallbackSlug = readPersistedBusinessSlug()
     const resolvedSlug = businessSlug ?? fallbackSlug
-    const destination = resolvedSlug ? `/${resolvedSlug}/book` : '/sign-in'
-    router.push(destination)
+    if (resolvedSlug) {
+      router.push(`/${resolvedSlug}/sign-in`)
+    } else {
+      router.push('/sign-in')
+    }
     router.refresh()
   }
 

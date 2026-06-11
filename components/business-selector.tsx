@@ -57,7 +57,7 @@ export function BusinessSelector({ businesses }: BusinessSelectorProps) {
               {filteredBusinesses.map((business) => (
                 <button
                   key={business.id}
-                  onClick={() => router.push(`/${business.slug}/sign-up`)}
+                  onClick={() => router.push(`/${business.slug}/sign-in`)}
                   className="w-full text-left p-3 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-colors group"
                 >
                   <div className="flex items-start justify-between">

@@ -46,7 +46,18 @@ export default async function SignInPage({ params }: SignInPageProps) {
   }
 
   const session = await auth.api.getSession({ headers: await headers() })
-  if (session?.user) redirect(`/${businessSlug}/book`)
+  if (session?.user) {
+    const user = await getCurrentUser()
+    if (!user) redirect(`/${businessSlug}/sign-in`)
+    
+    // Admin: check if owner of this business and redirect to admin
+    if (user.role === 'admin' && business.ownerId === user.id) {
+      redirect('/admin')
+    }
+    
+    // Client: auto-join and go to booking
+    redirect(`/${businessSlug}/book`)
+  }
 
   return <AuthForm mode="sign-in" businessSlug={businessSlug} businessName={business.name} />
 }

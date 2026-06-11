@@ -26,7 +26,14 @@ function VerifyEmailFormContent() {
 
   const isValidSlug = (value: string | null) => Boolean(value && /^[a-z0-9-]+$/.test(value))
 
-  const signInDestination = businessSlug ? `/${businessSlug}/sign-in` : '/sign-in'
+  const getDestination = () => {
+    if (businessSlug) {
+      return `/${businessSlug}/sign-in`
+    }
+    return '/invalid-slug/sign-up'
+  }
+
+  const signInDestination = getDestination()
 
   useEffect(() => {
     if (isValidSlug(businessSlugParam)) {
