@@ -558,6 +558,91 @@ export async function completeBooking(id: number, businessId: number) {
   revalidatePath('/admin')
 }
 
+export async function cancelBookingAsAdmin(id: number, businessId: number) {
+  const adminId = await requireAdmin()
+  const biz = await requireBusinessOwner(adminId, businessId)
+
+  const bookingRecord = await db
+    .select({ booking: bookings, slot: availabilitySlots, meetingType: meetingTypes, client: user })
+    .from(bookings)
+    .innerJoin(availabilitySlots, eq(bookings.slotId, availabilitySlots.id))
+    .innerJoin(meetingTypes, eq(bookings.meetingTypeId, meetingTypes.id))
+    .innerJoin(user, eq(bookings.clientId, user.id))
+    .where(and(eq(bookings.id, id), eq(bookings.businessId, businessId)))
+    .limit(1)
+
+  if (bookingRecord.length === 0) throw new Error('Booking not found')
+
+  const { booking, slot, meetingType, client } = bookingRecord[0]
+  if (booking.status === 'cancelled') return
+  if (booking.status === 'completed') {
+    throw new Error('Completed bookings cannot be cancelled')
+  }
+
+  await db
+    .update(bookings)
+    .set({ status: 'cancelled', updatedAt: new Date() })
+    .where(eq(bookings.id, id))
+
+  await db
+    .update(availabilitySlots)
+    .set({ isBooked: false, updatedAt: new Date() })
+    .where(eq(availabilitySlots.id, booking.slotId))
+
+  if (client.email) {
+    const dateFormatted = format(new Date(slot.date), 'EEEE, MMMM d, yyyy')
+    const timeFormatted = `${slot.startTime} - ${slot.endTime}`
+    const businessName = biz.name ?? 'Chrono'
+    const emailContent = getBookingCancellationEmail(
+      client.name,
+      meetingType.name,
+      dateFormatted,
+      timeFormatted,
+      businessName,
+    )
+
+    const admin = await db.select().from(user).where(eq(user.id, slot.adminId)).limit(1)
+    const organizerEmail = getOrganizerEmail()
+    const invite = organizerEmail
+      ? buildInvite({
+          bookingId: id,
+          businessId,
+          title: meetingType.name,
+          description: `${meetingType.name} meeting`,
+          date: slot.date,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+          organizerName: admin[0]?.name ?? businessName,
+          organizerEmail,
+          attendeeName: client.name,
+          attendeeEmail: client.email,
+          status: 'CANCELLED',
+          sequence: 2,
+        })
+      : undefined
+
+    await sendEmail({ to: client.email, ...emailContent, attachments: invite })
+
+    if (admin[0]?.email) {
+      const adminEmailContent = getAdminNotificationEmail(
+        admin[0].name,
+        client.name,
+        client.email,
+        meetingType.name,
+        dateFormatted,
+        timeFormatted,
+        'cancelled',
+        businessName,
+      )
+      await sendEmail({ to: admin[0].email, ...adminEmailContent, attachments: invite })
+    }
+  }
+
+  revalidatePath('/admin')
+  revalidatePath('/bookings')
+  revalidatePath(`/${biz.slug}/bookings`)
+}
+
 // ---------------------------------------------------------------------------
 // User management (business-scoped admin actions)
 // ---------------------------------------------------------------------------

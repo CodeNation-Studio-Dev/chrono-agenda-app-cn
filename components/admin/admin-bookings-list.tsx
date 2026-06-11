@@ -18,10 +18,10 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { useLanguage } from '@/lib/i18n/language-context'
-import { completeBooking } from '@/app/actions/scheduling'
+import { cancelBookingAsAdmin, completeBooking } from '@/app/actions/scheduling'
 import { format } from 'date-fns'
 import { es, enUS } from 'date-fns/locale'
-import { Calendar, CalendarDays, Clock, User, Users, CheckCircle2, Mail, Phone } from 'lucide-react'
+import { Calendar, CalendarDays, Clock, User, Users, CheckCircle2, Mail, Phone, X } from 'lucide-react'
 import type { AvailabilitySlot, MeetingType, Booking, User as UserType } from '@/lib/db/schema'
 
 interface BookingWithDetails {
@@ -42,6 +42,7 @@ export function AdminBookingsList({ bookings, businessId }: AdminBookingsListPro
   const { t, language } = useLanguage()
   const dateLocale = language === 'es' ? es : enUS
   const [completingId, setCompletingId] = useState<number | null>(null)
+  const [cancellingId, setCancellingId] = useState<number | null>(null)
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list')
   const [selectedDate, setSelectedDate] = useState<Date | undefined>()
   const [selectedBookingId, setSelectedBookingId] = useState<number | null>(null)
@@ -118,6 +119,15 @@ export function AdminBookingsList({ bookings, businessId }: AdminBookingsListPro
       await completeBooking(id, businessId)
     } finally {
       setCompletingId(null)
+    }
+  }
+
+  async function handleCancel(id: number) {
+    setCancellingId(id)
+    try {
+      await cancelBookingAsAdmin(id, businessId)
+    } finally {
+      setCancellingId(null)
     }
   }
 
@@ -241,26 +251,49 @@ export function AdminBookingsList({ bookings, businessId }: AdminBookingsListPro
                 </div>
 
                 <div className="flex-shrink-0">
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="outline" size="sm" disabled={completingId === booking.id}>
-                        <CheckCircle2 className="h-4 w-4" />
-                        {completingId === booking.id ? t.admin.completing : t.admin.completeMeeting}
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>{t.admin.markComplete}</AlertDialogTitle>
-                        <AlertDialogDescription>{t.admin.completeConfirm}</AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleComplete(booking.id)}>
-                          {t.admin.markComplete}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  <div className="flex items-center gap-2">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="outline" size="sm" disabled={completingId === booking.id || cancellingId === booking.id}>
+                          <CheckCircle2 className="h-4 w-4" />
+                          {completingId === booking.id ? t.admin.completing : t.admin.completeMeeting}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>{t.admin.markComplete}</AlertDialogTitle>
+                          <AlertDialogDescription>{t.admin.completeConfirm}</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleComplete(booking.id)}>
+                            {t.admin.markComplete}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" disabled={cancellingId === booking.id || completingId === booking.id}>
+                          <X className="h-4 w-4" />
+                          {cancellingId === booking.id ? t.bookings.cancelling : t.bookings.cancel}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>{t.bookings.cancelBooking}</AlertDialogTitle>
+                          <AlertDialogDescription>{t.bookings.cancelConfirm}</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleCancel(booking.id)}>
+                            {t.bookings.cancelBtn}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
               </div>
             </Card>
@@ -402,26 +435,49 @@ export function AdminBookingsList({ bookings, businessId }: AdminBookingsListPro
                       </p>
                     )}
 
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="outline" size="sm" disabled={completingId === selectedBooking.booking.id}>
-                          <CheckCircle2 className="h-4 w-4" />
-                          {completingId === selectedBooking.booking.id ? t.admin.completing : t.admin.completeMeeting}
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>{t.admin.markComplete}</AlertDialogTitle>
-                          <AlertDialogDescription>{t.admin.completeConfirm}</AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleComplete(selectedBooking.booking.id)}>
-                            {t.admin.markComplete}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    <div className="flex items-center gap-2">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" size="sm" disabled={completingId === selectedBooking.booking.id || cancellingId === selectedBooking.booking.id}>
+                            <CheckCircle2 className="h-4 w-4" />
+                            {completingId === selectedBooking.booking.id ? t.admin.completing : t.admin.completeMeeting}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>{t.admin.markComplete}</AlertDialogTitle>
+                            <AlertDialogDescription>{t.admin.completeConfirm}</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleComplete(selectedBooking.booking.id)}>
+                              {t.admin.markComplete}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" disabled={cancellingId === selectedBooking.booking.id || completingId === selectedBooking.booking.id}>
+                            <X className="h-4 w-4" />
+                            {cancellingId === selectedBooking.booking.id ? t.bookings.cancelling : t.bookings.cancel}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>{t.bookings.cancelBooking}</AlertDialogTitle>
+                            <AlertDialogDescription>{t.bookings.cancelConfirm}</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleCancel(selectedBooking.booking.id)}>
+                              {t.bookings.cancelBtn}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </Card>
                 )}
               </>
