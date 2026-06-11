@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -23,6 +23,7 @@ interface SystemManagerDashboardProps {
 }
 
 type BusinessStatusFilter = 'all' | 'trial-active' | 'trial-expired' | 'paid' | 'disabled'
+const ITEMS_PER_PAGE = 10
 
 function formatDate(value: Date | string | null) {
   if (!value) return 'N/A'
@@ -57,6 +58,10 @@ export function SystemManagerDashboard({
   const [pendingBusinessId, setPendingBusinessId] = useState<number | null>(null)
   const [disableReasons, setDisableReasons] = useState<Record<number, string>>({})
   const [statusFilter, setStatusFilter] = useState<BusinessStatusFilter>('all')
+  const [businessSearchQuery, setBusinessSearchQuery] = useState('')
+  const [businessPage, setBusinessPage] = useState(1)
+  const [adminSearchQuery, setAdminSearchQuery] = useState('')
+  const [adminPage, setAdminPage] = useState(1)
 
   const getBusinessFilterStatus = (business: Business): Exclude<BusinessStatusFilter, 'all'> | 'unpaid' => {
     if (business.isDisabled) return 'disabled'
@@ -71,6 +76,51 @@ export function SystemManagerDashboard({
     if (statusFilter === 'all') return true
     return getBusinessFilterStatus(business) === statusFilter
   })
+
+  const searchedBusinesses = filteredBusinesses.filter(({ business, owner }) => {
+    const q = businessSearchQuery.trim().toLowerCase()
+    if (!q) return true
+    return (
+      business.name.toLowerCase().includes(q)
+      || business.slug.toLowerCase().includes(q)
+      || owner.name.toLowerCase().includes(q)
+      || (owner.email ?? '').toLowerCase().includes(q)
+    )
+  })
+
+  const businessTotalPages = Math.max(1, Math.ceil(searchedBusinesses.length / ITEMS_PER_PAGE))
+  const paginatedBusinesses = searchedBusinesses.slice(
+    (businessPage - 1) * ITEMS_PER_PAGE,
+    businessPage * ITEMS_PER_PAGE,
+  )
+
+  const filteredAdmins = admins.filter((admin) => {
+    const q = adminSearchQuery.trim().toLowerCase()
+    if (!q) return true
+    return (
+      admin.name.toLowerCase().includes(q)
+      || (admin.email ?? '').toLowerCase().includes(q)
+      || (admin.phone ?? '').toLowerCase().includes(q)
+    )
+  })
+
+  const adminTotalPages = Math.max(1, Math.ceil(filteredAdmins.length / ITEMS_PER_PAGE))
+  const paginatedAdmins = filteredAdmins.slice(
+    (adminPage - 1) * ITEMS_PER_PAGE,
+    adminPage * ITEMS_PER_PAGE,
+  )
+
+  useEffect(() => {
+    if (businessPage > businessTotalPages) {
+      setBusinessPage(businessTotalPages)
+    }
+  }, [businessPage, businessTotalPages])
+
+  useEffect(() => {
+    if (adminPage > adminTotalPages) {
+      setAdminPage(adminTotalPages)
+    }
+  }, [adminPage, adminTotalPages])
 
   const handleMembershipToggle = async (business: Business) => {
     setPendingBusinessId(business.id)
@@ -118,45 +168,71 @@ export function SystemManagerDashboard({
               <Button
                 size="sm"
                 variant={statusFilter === 'all' ? 'default' : 'outline'}
-                onClick={() => setStatusFilter('all')}
+                onClick={() => {
+                  setStatusFilter('all')
+                  setBusinessPage(1)
+                }}
               >
                 {t.systemManager.filterAll}
               </Button>
               <Button
                 size="sm"
                 variant={statusFilter === 'trial-active' ? 'default' : 'outline'}
-                onClick={() => setStatusFilter('trial-active')}
+                onClick={() => {
+                  setStatusFilter('trial-active')
+                  setBusinessPage(1)
+                }}
               >
                 {t.systemManager.filterTrialActive}
               </Button>
               <Button
                 size="sm"
                 variant={statusFilter === 'trial-expired' ? 'default' : 'outline'}
-                onClick={() => setStatusFilter('trial-expired')}
+                onClick={() => {
+                  setStatusFilter('trial-expired')
+                  setBusinessPage(1)
+                }}
               >
                 {t.systemManager.filterTrialExpired}
               </Button>
               <Button
                 size="sm"
                 variant={statusFilter === 'paid' ? 'default' : 'outline'}
-                onClick={() => setStatusFilter('paid')}
+                onClick={() => {
+                  setStatusFilter('paid')
+                  setBusinessPage(1)
+                }}
               >
                 {t.systemManager.filterPaid}
               </Button>
               <Button
                 size="sm"
                 variant={statusFilter === 'disabled' ? 'default' : 'outline'}
-                onClick={() => setStatusFilter('disabled')}
+                onClick={() => {
+                  setStatusFilter('disabled')
+                  setBusinessPage(1)
+                }}
               >
                 {t.systemManager.filterDisabled}
               </Button>
             </div>
 
-            {filteredBusinesses.length === 0 ? (
+            <div className="w-full max-w-sm">
+              <Input
+                value={businessSearchQuery}
+                onChange={(event) => {
+                  setBusinessSearchQuery(event.target.value)
+                  setBusinessPage(1)
+                }}
+                placeholder={t.systemManager.searchBusinessesPlaceholder}
+              />
+            </div>
+
+            {searchedBusinesses.length === 0 ? (
               <Card className="p-6 text-center text-muted-foreground">{t.systemManager.noBusinessesForFilter}</Card>
             ) : null}
 
-            {filteredBusinesses.map(({ business, owner }) => {
+            {paginatedBusinesses.map(({ business, owner }) => {
               const isPending = pendingBusinessId === business.id
               const trial = getTrialMeta(business.trialEndsAt)
 
@@ -240,6 +316,32 @@ export function SystemManagerDashboard({
                 </Card>
               )
             })}
+
+            {searchedBusinesses.length > 0 ? (
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm text-muted-foreground">
+                  {t.systemManager.pageLabel} {businessPage} / {businessTotalPages}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setBusinessPage((prev) => Math.max(1, prev - 1))}
+                    disabled={businessPage === 1}
+                  >
+                    {t.systemManager.prevPage}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setBusinessPage((prev) => Math.min(businessTotalPages, prev + 1))}
+                    disabled={businessPage === businessTotalPages}
+                  >
+                    {t.systemManager.nextPage}
+                  </Button>
+                </div>
+              </div>
+            ) : null}
           </div>
         )}
       </section>
@@ -254,7 +356,22 @@ export function SystemManagerDashboard({
           <Card className="p-8 text-center text-muted-foreground">{t.systemManager.noAdmins}</Card>
         ) : (
           <div className="space-y-3">
-            {admins.map((admin) => (
+            <div className="w-full max-w-sm">
+              <Input
+                value={adminSearchQuery}
+                onChange={(event) => {
+                  setAdminSearchQuery(event.target.value)
+                  setAdminPage(1)
+                }}
+                placeholder={t.systemManager.searchAdminsPlaceholder}
+              />
+            </div>
+
+            {filteredAdmins.length === 0 ? (
+              <Card className="p-6 text-center text-muted-foreground">{t.systemManager.noAdminsForFilter}</Card>
+            ) : null}
+
+            {paginatedAdmins.map((admin) => (
               <Card key={admin.id} className="p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
@@ -268,6 +385,32 @@ export function SystemManagerDashboard({
                 </div>
               </Card>
             ))}
+
+            {filteredAdmins.length > 0 ? (
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm text-muted-foreground">
+                  {t.systemManager.pageLabel} {adminPage} / {adminTotalPages}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setAdminPage((prev) => Math.max(1, prev - 1))}
+                    disabled={adminPage === 1}
+                  >
+                    {t.systemManager.prevPage}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setAdminPage((prev) => Math.min(adminTotalPages, prev + 1))}
+                    disabled={adminPage === adminTotalPages}
+                  >
+                    {t.systemManager.nextPage}
+                  </Button>
+                </div>
+              </div>
+            ) : null}
           </div>
         )}
       </section>

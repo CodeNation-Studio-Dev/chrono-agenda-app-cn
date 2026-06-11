@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -49,6 +49,7 @@ function slugify(text: string) {
 
 type DialogStep = 'details' | 'payment'
 type TrialFilter = 'all' | 'trial-active' | 'trial-expired' | 'paid'
+const ITEMS_PER_PAGE = 10
 
 export function BusinessesManager({
   businesses,
@@ -60,6 +61,8 @@ export function BusinessesManager({
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogStep, setDialogStep] = useState<DialogStep>('details')
   const [trialFilter, setTrialFilter] = useState<TrialFilter>('all')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
   const [deleteTarget, setDeleteTarget] = useState<Business | null>(null)
   const [payTarget, setPayTarget] = useState<Business | null>(null)
 
@@ -158,6 +161,26 @@ export function BusinessesManager({
     return getTrialStatus(biz) === trialFilter
   })
 
+  const searchedBusinesses = filteredBusinesses.filter((biz) => {
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return true
+    return (
+      biz.name.toLowerCase().includes(q)
+      || biz.slug.toLowerCase().includes(q)
+      || (biz.description ?? '').toLowerCase().includes(q)
+    )
+  })
+
+  const totalPages = Math.max(1, Math.ceil(searchedBusinesses.length / ITEMS_PER_PAGE))
+  const paginatedBusinesses = searchedBusinesses.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE,
+  )
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages)
+  }, [currentPage, totalPages])
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -170,18 +193,56 @@ export function BusinessesManager({
             {t.admin.myBusinessesDesc}
           </p>
           <div className="flex flex-wrap items-center gap-2 mt-2">
-            <Button size="sm" variant={trialFilter === 'all' ? 'default' : 'outline'} onClick={() => setTrialFilter('all')}>
+            <Button
+              size="sm"
+              variant={trialFilter === 'all' ? 'default' : 'outline'}
+              onClick={() => {
+                setTrialFilter('all')
+                setCurrentPage(1)
+              }}
+            >
               All
             </Button>
-            <Button size="sm" variant={trialFilter === 'trial-active' ? 'default' : 'outline'} onClick={() => setTrialFilter('trial-active')}>
+            <Button
+              size="sm"
+              variant={trialFilter === 'trial-active' ? 'default' : 'outline'}
+              onClick={() => {
+                setTrialFilter('trial-active')
+                setCurrentPage(1)
+              }}
+            >
               Trial Active
             </Button>
-            <Button size="sm" variant={trialFilter === 'trial-expired' ? 'default' : 'outline'} onClick={() => setTrialFilter('trial-expired')}>
+            <Button
+              size="sm"
+              variant={trialFilter === 'trial-expired' ? 'default' : 'outline'}
+              onClick={() => {
+                setTrialFilter('trial-expired')
+                setCurrentPage(1)
+              }}
+            >
               Trial Expired
             </Button>
-            <Button size="sm" variant={trialFilter === 'paid' ? 'default' : 'outline'} onClick={() => setTrialFilter('paid')}>
+            <Button
+              size="sm"
+              variant={trialFilter === 'paid' ? 'default' : 'outline'}
+              onClick={() => {
+                setTrialFilter('paid')
+                setCurrentPage(1)
+              }}
+            >
               Paid
             </Button>
+          </div>
+          <div className="mt-3 w-full max-w-sm">
+            <Input
+              value={searchQuery}
+              onChange={(event) => {
+                setSearchQuery(event.target.value)
+                setCurrentPage(1)
+              }}
+              placeholder="Search by business name, slug or description"
+            />
           </div>
         </div>
         <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
@@ -280,13 +341,14 @@ export function BusinessesManager({
             {t.admin.noBusinessesDesc}
           </p>
         </Card>
-      ) : filteredBusinesses.length === 0 ? (
+      ) : searchedBusinesses.length === 0 ? (
         <Card className="p-8 text-center">
           <p className="text-sm text-muted-foreground">No businesses found for the selected filter.</p>
         </Card>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredBusinesses.map((biz) => (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {paginatedBusinesses.map((biz) => (
             <Card
               key={biz.id}
               className={`p-4 cursor-pointer transition-colors ${
@@ -390,8 +452,33 @@ export function BusinessesManager({
                 </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              Page {currentPage} of {totalPages}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        </>
       )}
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
