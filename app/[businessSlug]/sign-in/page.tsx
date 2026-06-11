@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
 import { getBusinessBySlug, getPublicBusinesses } from '@/app/actions/business'
+import { getCurrentUser } from '@/app/actions/scheduling'
 import { AuthForm } from '@/components/auth-form'
 import { BusinessSelector } from '@/components/business-selector'
 
@@ -49,6 +50,10 @@ export default async function SignInPage({ params }: SignInPageProps) {
   if (session?.user) {
     const user = await getCurrentUser()
     if (!user) redirect(`/${businessSlug}/sign-in`)
+
+    if (user.role === 'system_manager') {
+      redirect('/system-manager')
+    }
     
     // Admin: check if owner of this business and redirect to admin
     if (user.role === 'admin' && business.ownerId === user.id) {

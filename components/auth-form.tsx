@@ -40,12 +40,6 @@ export function AuthForm({
     document.cookie = `chrono_preferred_business=${encodeURIComponent(slug)}; Path=/; Max-Age=31536000; SameSite=Lax`
   }
 
-  const readPersistedBusinessSlug = () => {
-    if (typeof window === 'undefined') return null
-    const value = window.sessionStorage.getItem('chrono:lastBusinessSlug')
-    return value && /^[a-z0-9-]+$/.test(value) ? value : null
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -73,10 +67,8 @@ export function AuthForm({
     }
 
     // Sign-in: delegate role-based redirect to server page
-    const fallbackSlug = readPersistedBusinessSlug()
-    const resolvedSlug = businessSlug ?? fallbackSlug
-    if (resolvedSlug) {
-      router.push(`/${resolvedSlug}/sign-in`)
+    if (businessSlug) {
+      router.push(`/${businessSlug}/sign-in`)
     } else {
       router.push('/sign-in')
     }
