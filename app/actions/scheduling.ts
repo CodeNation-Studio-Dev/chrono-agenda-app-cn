@@ -16,6 +16,19 @@ import {
 import { generateICS } from '@/lib/calendar'
 import { format } from 'date-fns'
 
+function extractEmailAddress(value?: string): string | null {
+  if (!value) return null
+  const match = value.match(/<([^>]+)>/)
+  if (match?.[1]) return match[1].trim()
+  if (value.includes('@')) return value.trim()
+  return null
+}
+
+function getOrganizerEmail(fallback?: string): string | null {
+  const configured = extractEmailAddress(process.env.EMAIL_FROM)
+  return fallback ?? configured
+}
+
 // Build an .ics calendar invite attachment for a booking.
 function buildInvite(opts: {
   bookingId: number
@@ -32,6 +45,7 @@ function buildInvite(opts: {
   status?: 'CONFIRMED' | 'CANCELLED'
   sequence?: number
 }) {
+  const method = opts.status === 'CANCELLED' ? 'CANCEL' : 'REQUEST'
   const ics = generateICS({
     uid: `booking-${opts.bookingId}-biz-${opts.businessId}@meetingscheduler`,
     title: opts.title,
@@ -50,7 +64,7 @@ function buildInvite(opts: {
     {
       filename: 'invite.ics',
       content: Buffer.from(ics).toString('base64'),
-      contentType: 'text/calendar; method=REQUEST; charset=UTF-8',
+      contentType: `text/calendar; method=${method}; charset=UTF-8`,
     },
   ]
 }
@@ -309,7 +323,8 @@ export async function createBooking(data: {
     )
 
     const admin = await db.select().from(user).where(eq(user.id, slot[0].adminId)).limit(1)
-    const invite = admin[0]?.email
+    const organizerEmail = getOrganizerEmail(admin[0]?.email)
+    const invite = organizerEmail
       ? buildInvite({
           bookingId: result[0].id,
           businessId: data.businessId,
@@ -318,8 +333,8 @@ export async function createBooking(data: {
           date: slot[0].date,
           startTime: slot[0].startTime,
           endTime: slot[0].endTime,
-          organizerName: admin[0].name,
-          organizerEmail: admin[0].email,
+          organizerName: admin[0]?.name ?? businessName,
+          organizerEmail,
           attendeeName: clientRecord[0].name,
           attendeeEmail: clientRecord[0].email,
           status: 'CONFIRMED',
@@ -385,7 +400,8 @@ export async function cancelBooking(id: number) {
     )
 
     const admin = await db.select().from(user).where(eq(user.id, slot.adminId)).limit(1)
-    const invite = admin[0]?.email
+    const organizerEmail = getOrganizerEmail(admin[0]?.email)
+    const invite = organizerEmail
       ? buildInvite({
           bookingId: id,
           businessId: booking.businessId,
@@ -394,8 +410,8 @@ export async function cancelBooking(id: number) {
           date: slot.date,
           startTime: slot.startTime,
           endTime: slot.endTime,
-          organizerName: admin[0].name,
-          organizerEmail: admin[0].email,
+          organizerName: admin[0]?.name ?? businessName,
+          organizerEmail,
           attendeeName: clientRecord[0].name,
           attendeeEmail: clientRecord[0].email,
           status: 'CANCELLED',
@@ -485,7 +501,8 @@ export async function rescheduleBooking(id: number, newSlotId: number) {
     )
 
     const admin = await db.select().from(user).where(eq(user.id, newSlot[0].adminId)).limit(1)
-    const invite = admin[0]?.email
+    const organizerEmail = getOrganizerEmail(admin[0]?.email)
+    const invite = organizerEmail
       ? buildInvite({
           bookingId: id,
           businessId: booking.businessId,
@@ -494,8 +511,8 @@ export async function rescheduleBooking(id: number, newSlotId: number) {
           date: newSlot[0].date,
           startTime: newSlot[0].startTime,
           endTime: newSlot[0].endTime,
-          organizerName: admin[0].name,
-          organizerEmail: admin[0].email,
+          organizerName: admin[0]?.name ?? businessName,
+          organizerEmail,
           attendeeName: clientRecord[0].name,
           attendeeEmail: clientRecord[0].email,
           status: 'CONFIRMED',
@@ -677,7 +694,8 @@ export async function adminCreateBooking(data: {
     )
 
     const admin = await db.select().from(user).where(eq(user.id, adminId)).limit(1)
-    const invite = admin[0]?.email
+    const organizerEmail = getOrganizerEmail(admin[0]?.email)
+    const invite = organizerEmail
       ? buildInvite({
           bookingId: result[0].id,
           businessId: data.businessId,
@@ -686,8 +704,8 @@ export async function adminCreateBooking(data: {
           date: slot[0].date,
           startTime: slot[0].startTime,
           endTime: slot[0].endTime,
-          organizerName: admin[0].name,
-          organizerEmail: admin[0].email,
+          organizerName: admin[0]?.name ?? businessName,
+          organizerEmail,
           attendeeName: clientRecord[0].name,
           attendeeEmail: clientRecord[0].email,
           status: 'CONFIRMED',
